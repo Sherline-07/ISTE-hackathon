@@ -1,3 +1,4 @@
+/* --- Bolder Smart City Glassmorphism & Fluid Motion Design System --- */
 :root {
   --primary: #0f172a;
   --primary-accent: #2563eb;
@@ -20,62 +21,53 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
+/* Bold Fluid Motion Background */
 body {
   color: var(--text-main);
-  background-color: #0b1329;
+  background: #0b1329; /* Dark tech foundation */
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
 }
 
-/* Bold, Vibrant Animated Background Glow Orbs */
-.bg-glow {
+/* Dynamic Moving Wave Effect */
+body::before {
+  content: "";
   position: fixed;
-  border-radius: 50%;
-  filter: blur(110px);
+  inset: -50%;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.65;
-  animation: floatGlow 18s infinite alternate ease-in-out;
+  background: radial-gradient(circle at 30% 30%, rgba(37, 99, 235, 0.45), transparent 40%),
+              radial-gradient(circle at 70% 70%, rgba(16, 185, 129, 0.45), transparent 40%),
+              radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.35), transparent 40%),
+              radial-gradient(circle at 80% 20%, rgba(217, 119, 6, 0.25), transparent 35%);
+  background-size: 200% 200%;
+  animation: fluidMotion 16s ease-in-out infinite alternate;
+  filter: blur(80px);
 }
 
-.bg-glow-1 {
-  width: 550px;
-  height: 550px;
-  background: #3b82f6;
-  top: -120px;
-  left: -120px;
+/* Keyframes for Continuous Smooth Motion */
+@keyframes fluidMotion {
+  0% {
+    transform: rotate(0deg) scale(1);
+    background-position: 0% 0%;
+  }
+  50% {
+    transform: rotate(180deg) scale(1.2);
+    background-position: 100% 100%;
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    background-position: 0% 0%;
+  }
 }
 
-.bg-glow-2 {
-  width: 650px;
-  height: 650px;
-  background: #10b981;
-  bottom: -150px;
-  right: -120px;
-  animation-delay: -9s;
-}
-
-.bg-glow-3 {
-  width: 450px;
-  height: 450px;
-  background: #6366f1;
-  top: 40%;
-  left: 30%;
-  animation-delay: -5s;
-}
-
-@keyframes floatGlow {
-  0% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(120px, 80px) scale(1.1); }
-  100% { transform: translate(-60px, 140px) scale(0.9); }
-}
-
+/* Tech Grid Overlay */
 .grid-overlay {
   position: fixed;
   inset: 0;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-  background-size: 28px 28px;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 32px 32px;
   pointer-events: none;
   z-index: 0;
 }
@@ -327,12 +319,6 @@ input:focus, select:focus, textarea:focus {
   align-items: center;
   gap: 0.4rem;
   margin-top: 0.5rem;
-}
-
-.ai-tag-badge.invalid {
-  background: #fef2f2;
-  color: var(--danger);
-  border: 1px solid #fecaca;
 }
 
 /* Buttons & Alerts */
