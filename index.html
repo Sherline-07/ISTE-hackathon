@@ -20,10 +20,7 @@
 </head>
 <body>
 
-  <!-- Bold Animated Background Glow Orbs -->
-  <div class="bg-glow bg-glow-1"></div>
-  <div class="bg-glow bg-glow-2"></div>
-  <div class="bg-glow bg-glow-3"></div>
+  <!-- Tech Grid Overlay -->
   <div class="grid-overlay"></div>
 
   <!-- Navigation Bar -->
@@ -76,7 +73,6 @@
     <!-- Report Submission Form with Map -->
     <section id="report" class="section-card">
       <div class="section-header">
-        <div class="icon-wrapper"><i data-lucide="map-pin"></i></div>
         <div>
           <h2>Submit Infrastructure Report</h2>
           <p>Click on the map or use auto-detect GPS, attach photo evidence, and let UrbanEye analyze the report.</p>
@@ -91,7 +87,6 @@
             <input type="text" id="title" placeholder="e.g., Deep Pothole on Main Street near Sector 4" required />
           </div>
 
-          <!-- Expanded Real-World Municipal Categories -->
           <div class="form-group">
             <label for="category">Category *</label>
             <select id="category" required>
@@ -116,7 +111,7 @@
             </select>
           </div>
 
-          <!-- Emergency Alert Banner -->
+          <!-- Emergency Alert Banner (Hidden by Default) -->
           <div class="alert alert-danger hidden full-width" id="emergencyBanner">
             <i data-lucide="siren" class="alert-icon"></i>
             <div>
@@ -124,7 +119,6 @@
             </div>
           </div>
 
-          <!-- Contact Details -->
           <div class="form-group">
             <label for="reporterName">Your Name (Optional)</label>
             <input type="text" id="reporterName" placeholder="e.g., John Doe" />
@@ -137,19 +131,18 @@
 
           <!-- Geolocation & Interactive Manual Pinning Map -->
           <div class="form-group full-width">
-            <label>Location Coordinates & Interactive Map (Click anywhere on the map to set location pin) *</label>
+            <label>Location Coordinates & Interactive Map *</label>
             <div class="geo-picker">
               <button type="button" class="btn btn-secondary" onclick="getLocation()">
-                <i data-lucide="crosshair"></i> Auto-Detect GPS
+                <i data-lucide="crosshair"></i> GPS
               </button>
               <input type="text" id="locationDisplay" placeholder="Click map or use Auto-Detect GPS" readonly required />
             </div>
-            <!-- Leaflet Map Canvas -->
             <div id="map" class="map-container"></div>
             <small class="help-text"><i data-lucide="info"></i> Tip: You can click directly on the map to manually place or adjust your location pin.</small>
           </div>
 
-          <!-- File Upload with AI Preview Badge & Invalid Detection Alert -->
+          <!-- File Upload with AI Preview Badge -->
           <div class="form-group full-width">
             <label>Upload Photo Evidence *</label>
             <div class="file-dropzone" onclick="document.getElementById('fileInput').click()">
@@ -157,9 +150,9 @@
               <p><strong>Click to upload photo</strong> or drag and drop</p>
               <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="previewImage(event)" required />
               
-              <div id="imagePreviewContainer" style="display: none; position: relative;">
+              <div id="imagePreviewContainer" style="display: none; position: relative; margin-top: 1rem;">
                 <img id="imagePreview" alt="Preview" class="image-preview" />
-                <div class="ai-tag-badge" id="aiBadge">
+                <div class="ai-tag-badge" id="aiBadge" style="display: none;">
                   <i data-lucide="cpu"></i> AI Inspection: <span id="aiResultText">Analyzing image...</span>
                 </div>
               </div>
@@ -173,7 +166,7 @@
 
         </div>
 
-        <!-- Smart Duplicate Alert Banner -->
+        <!-- Smart Duplicate Alert Banner (Hidden by Default) -->
         <div class="alert alert-warning hidden" id="duplicateAlert">
           <i data-lucide="alert-triangle" class="alert-icon"></i>
           <div>
@@ -193,7 +186,6 @@
     <!-- Public Community Feed -->
     <section id="feed" class="section-card">
       <div class="section-header">
-        <div class="icon-wrapper"><i data-lucide="activity"></i></div>
         <div>
           <h2>Community Infrastructure Feed</h2>
           <p>Track reported issues, vote for high-priority hazards, and view resolution updates.</p>
@@ -208,8 +200,7 @@
       </div>
 
       <div class="card-grid" id="feedGrid">
-        
-        <!-- Incident Card 1 -->
+        <!-- Static Cards for Demo -->
         <div class="issue-card" data-status="pending">
           <div class="card-image-wrap">
             <img src="https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=600&q=80" alt="Issue Photo" class="card-img"/>
@@ -232,62 +223,12 @@
             </div>
           </div>
         </div>
-
-        <!-- Incident Card 2 -->
-        <div class="issue-card" data-status="in-progress">
-          <div class="card-image-wrap">
-            <img src="https://images.unsplash.com/photo-1541888946425-d0fbb186a5b7?auto=format&fit=crop&w=600&q=80" alt="Issue Photo" class="card-img"/>
-            <span class="status-badge status-progress">In Progress</span>
-            <span class="ai-verified-pill"><i data-lucide="check"></i> AI Verified Photo</span>
-          </div>
-          <div class="card-body">
-            <span class="card-category">Streetlight & Electrical</span>
-            <h3 class="card-title">Damaged Streetlight Junction Box</h3>
-            <p class="card-desc">Exposed wires on sidewalk posing safety risk during rain.</p>
-            <div class="card-meta">
-              <span><i data-lucide="map-pin"></i> 12.9812, 80.2311</span>
-              <span><i data-lucide="clock"></i> 1d ago</span>
-            </div>
-            <div class="card-footer">
-              <button class="btn-upvote voted" onclick="upvote(this)">
-                <i data-lucide="thumbs-up"></i> <span class="vote-count">43</span> Upvotes
-              </button>
-              <span class="issue-id">ID: #UE-4790</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Incident Card 3 -->
-        <div class="issue-card" data-status="resolved">
-          <div class="card-image-wrap">
-            <img src="https://images.unsplash.com/photo-1584467735871-8e85353a8413?auto=format&fit=crop&w=600&q=80" alt="Resolved Issue Photo" class="card-img"/>
-            <span class="status-badge status-resolved">Resolved</span>
-            <span class="verified-tag"><i data-lucide="check-circle-2"></i> Fixed & Verified</span>
-          </div>
-          <div class="card-body">
-            <span class="card-category">Garbage & Sanitation</span>
-            <h3 class="card-title">Overflowing Bin Clearance</h3>
-            <p class="card-desc">Public bin near central park cleared and sanitized by local authorities.</p>
-            <div class="card-meta">
-              <span><i data-lucide="map-pin"></i> 12.9601, 80.2188</span>
-              <span><i data-lucide="clock"></i> 3d ago</span>
-            </div>
-            <div class="card-footer">
-              <button class="btn-upvote" onclick="upvote(this)">
-                <i data-lucide="thumbs-up"></i> <span class="vote-count">31</span> Upvotes
-              </button>
-              <span class="issue-id">ID: #UE-4655</span>
-            </div>
-          </div>
-        </div>
-
       </div>
     </section>
 
     <!-- Track Submitted Reports -->
     <section id="my-reports" class="section-card">
       <div class="section-header">
-        <div class="icon-wrapper"><i data-lucide="user-check"></i></div>
         <div>
           <h2>My Submitted Reports</h2>
           <p>Track status updates for reports submitted from this device.</p>
@@ -301,7 +242,6 @@
     <!-- Municipal Operational Analytics Graph & Civic Leaderboard -->
     <section id="analytics" class="section-card">
       <div class="section-header">
-        <div class="icon-wrapper"><i data-lucide="bar-chart-3"></i></div>
         <div>
           <h2>City Response Overview</h2>
           <p>Real-time updates showing how quickly municipal authorities resolve reported issues.</p>
@@ -327,39 +267,10 @@
       <div class="chart-wrapper">
         <h3>Monthly Reports vs. Resolutions</h3>
         <p class="chart-sub">Hover over any point on the graph to inspect exact monthly totals.</p>
-        <div class="canvas-holder">
+        <div class="canvas-holder" style="height: 300px; position: relative;">
           <canvas id="reportsChart"></canvas>
         </div>
       </div>
-
-      <!-- Citizen Leaderboard -->
-      <div class="leaderboard-section">
-        <h3>🏆 Top Civic Heroes This Month</h3>
-        <div class="leaderboard-grid">
-          <div class="hero-rank-card">
-            <span class="rank-num">#1</span>
-            <div>
-              <strong>Aarav Sharma</strong>
-              <p>12 Verified Reports • 340 Impact Pts</p>
-            </div>
-          </div>
-          <div class="hero-rank-card">
-            <span class="rank-num">#2</span>
-            <div>
-              <strong>Priya Sundaram</strong>
-              <p>9 Verified Reports • 260 Impact Pts</p>
-            </div>
-          </div>
-          <div class="hero-rank-card">
-            <span class="rank-num">#3</span>
-            <div>
-              <strong>Ananya Patel</strong>
-              <p>7 Verified Reports • 190 Impact Pts</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </section>
 
   </main>
