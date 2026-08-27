@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Create Account - UrbanEye Civic Platform</title>
+
+  <!-- Google Fonts & Lucide Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="login.css" />
+</head>
+<body class="auth-body">
+
+  <!-- Minimal Auth Navbar -->
+  <header class="auth-nav">
+    <div class="logo">
+      <div class="logo-icon"><i data-lucide="eye"></i></div>
+      <span>Urban<strong>Eye</strong></span>
+    </div>
+    <a href="index.html" class="auth-nav-link">
+      <i data-lucide="log-in"></i> Sign In
+    </a>
+  </header>
+
+  <!-- Main Center Auth Area -->
+  <main class="auth-wrapper">
+    <div class="auth-card">
+
+      <!-- Role Toggle -->
+      <div class="role-toggle">
+        <button type="button" class="active" data-role="citizen" onclick="setRole('citizen')">
+          <i data-lucide="user"></i> Citizen Account
+        </button>
+        <button type="button" data-role="admin" onclick="setRole('admin')">
+          <i data-lucide="shield"></i> Admin Staff
+        </button>
+      </div>
+
+      <!-- Header -->
+      <div class="auth-header">
+        <div class="auth-header-icon" id="authIconWrap"><i data-lucide="user-plus"></i></div>
+        <h1 id="authTitle" data-citizen-text="Create Citizen Account" data-admin-text="Register Municipal Admin">Create Citizen Account</h1>
+        <p id="authSubtitle"
+           data-citizen-text="Verify your email with a 6-digit OTP to start reporting civic issues."
+           data-admin-text="Municipal staff registration requires a department access code.">
+          Verify your email with a 6-digit OTP to start reporting civic issues.
+        </p>
+      </div>
+
+      <!-- Admin Access Code Notice -->
+      <div class="admin-code-note" id="adminCodeNote" style="display:none;">
+        <i data-lucide="info"></i>
+        <span>Admin registration requires the official municipal passkey (e.g. <code>urbaneye-admin-2026</code>).</span>
+      </div>
+
+      <!-- Registration Form -->
+      <form class="auth-form" id="registerForm" onsubmit="handleRegisterSubmit(event)">
+
+        <!-- Full Name -->
+        <div class="form-group">
+          <label class="field-label" for="regName">
+            Full Name
+            <span class="label-tag">Required</span>
+          </label>
+          <div class="input-wrap">
+            <i data-lucide="user" class="input-icon"></i>
+            <input type="text" id="regName" placeholder="e.g., Aarav Sharma" required autocomplete="name" />
+          </div>
+        </div>
+
+        <!-- Email & OTP Verification -->
+        <div class="form-group">
+          <label class="field-label" for="contactInput">
+            Email Address (OTP Verification)
+            <span class="label-tag">OTP Sent Here</span>
+          </label>
+          <div class="input-wrap">
+            <i data-lucide="mail" class="input-icon"></i>
+            <input type="email" id="contactInput" placeholder="name@example.com" required autocomplete="email" />
+          </div>
+          <span class="field-error" id="contactError"></span>
+
+          <button type="button" class="btn-send-otp" id="sendOtpBtn" onclick="sendOtp()">
+            <i data-lucide="send"></i> Send 6-Digit OTP
+          </button>
+
+          <!-- OTP Verification Block -->
+          <div class="otp-container" id="otpBlock">
+            <div class="otp-note" id="otpSentNote">
+              <i data-lucide="mail-check"></i> Code sent to your email
+            </div>
+
+            <div class="otp-inputs">
+              <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 1" />
+              <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 2" />
+              <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 3" />
+              <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 4" />
+              <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 5" />
+              <input type="text" inputmode="numeric" maxlength="1" aria-label="Digit 6" />
+            </div>
+
+            <div class="otp-timer-row">
+              <span class="otp-timer" id="otpTimer">Valid for <strong>02:00</strong></span>
+              <button type="button" class="resend-btn" id="resendBtn" onclick="resendOtp()" disabled>Resend Code</button>
+            </div>
+
+            <button type="button" class="btn-auth-secondary" onclick="verifyOtp()">
+              <i data-lucide="shield-check"></i> Verify OTP Code
+            </button>
+
+            <div class="otp-status" id="otpStatus"></div>
+          </div>
+        </div>
+
+        <!-- Phone Number (Single clean contact field) -->
+        <div class="form-group">
+          <label class="field-label" for="regPhone">
+            Phone Number
+            <span class="label-tag">Status SMS / Alerts</span>
+          </label>
+          <div class="input-wrap">
+            <i data-lucide="phone" class="input-icon"></i>
+            <input type="tel" id="regPhone" placeholder="e.g., +91 9876543210" required autocomplete="tel" />
+          </div>
+        </div>
+
+        <!-- Admin Passcode (Only when Admin is toggled) -->
+        <div class="form-group" id="adminCodeField" style="display:none;">
+          <label class="field-label" for="adminAccessCode">
+            Municipal Admin Passkey
+            <span class="label-tag" style="color:#f59e0b;">Required</span>
+          </label>
+          <div class="input-wrap">
+            <i data-lucide="key-round" class="input-icon"></i>
+            <input type="text" id="adminAccessCode" placeholder="Enter department access code" />
+          </div>
+        </div>
+
+        <!-- Passwords -->
+        <div class="field-row">
+          <div class="form-group">
+            <label class="field-label" for="regPassword">Password</label>
+            <div class="input-wrap">
+              <i data-lucide="lock" class="input-icon"></i>
+              <input type="password" id="regPassword" class="password-input" placeholder="Min. 8 chars" required autocomplete="new-password" />
+              <button type="button" class="toggle-visibility" onclick="toggleVisibility('regPassword', this)" aria-label="Toggle password visibility">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+            <div class="strength-meter"><div class="strength-fill" id="strengthFill"></div></div>
+            <span class="strength-label" id="strengthLabel"></span>
+          </div>
+
+          <div class="form-group">
+            <label class="field-label" for="regConfirmPassword">Confirm</label>
+            <div class="input-wrap">
+              <i data-lucide="lock" class="input-icon"></i>
+              <input type="password" id="regConfirmPassword" class="password-input" placeholder="Re-enter" required autocomplete="new-password" />
+              <button type="button" class="toggle-visibility" onclick="toggleVisibility('regConfirmPassword', this)" aria-label="Toggle password visibility">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="btn-auth-primary" id="registerSubmitBtn">
+          <i data-lucide="user-check"></i> Complete Registration
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        Already have an account? <a href="index.html">Sign in here</a>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="login.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

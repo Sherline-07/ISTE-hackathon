@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UrbanEye - Smart Civic Infrastructure Platform</title>
+
+  <!-- Google Fonts & Lucide Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Leaflet Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+
+
+  <!-- Strict Auth Guard (Blocks unauthenticated page render) -->
+  <script>
+    (function() {
+      const token = localStorage.getItem("urbaneye_token");
+      if (!token) {
+        window.location.replace("index.html");
+      }
+    })();
+  </script>
+</head>
+
+<body>
+
+  <!-- Tech Grid Overlay -->
+  <div class="grid-overlay"></div>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="logo">
+        <div class="logo-icon"><i data-lucide="eye"></i></div>
+        <span>Urban<strong>Eye</strong></span>
+      </div>
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#report" class="active">Report Issue</a></li>
+        <li><a href="#feed">Live Feed</a></li>
+        <li><a href="#my-reports">My Reports</a></li>
+        <li><a href="#analytics">City Metrics</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button class="btn btn-primary" onclick="scrollToReport()">
+          <i data-lucide="plus-circle"></i> New Report
+        </button>
+        <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu" onclick="toggleMobileNav()">
+          <i data-lucide="menu"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="hero-content">
+      <span class="badge"><i data-lucide="sparkles"></i> AI-Powered Civic Governance</span>
+      <h1>Empowering Citizens.<br>Upgrading Infrastructure.</h1>
+      <p>Report civic disruptions instantly with auto-geotagging, click-to-pin maps, smart duplicate prevention, and AI photo validation.</p>
+      
+      <div class="hero-stats">
+        <div class="stat-card">
+          <h3>1,420+</h3>
+          <p>Issues Resolved</p>
+        </div>
+        <div class="stat-card">
+          <h3>96.4%</h3>
+          <p>Response Rate</p>
+        </div>
+        <div class="stat-card">
+          <h3>&lt; 24 hrs</h3>
+          <p>Avg Turnaround Time</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+
+    <!-- Report Submission Form with Map -->
+    <section id="report" class="section-card">
+      <div class="section-header">
+        <div>
+          <h2>Submit Infrastructure Report</h2>
+          <p>Click on the map or use auto-detect GPS, attach photo evidence, and let UrbanEye analyze the report.</p>
+        </div>
+      </div>
+
+      <form id="issueForm" onsubmit="handleFormSubmit(event)">
+        <div class="form-grid">
+          
+          <div class="form-group full-width">
+            <label for="title">Issue Title *</label>
+            <input type="text" id="title" placeholder="e.g., Deep Pothole on Main Street near Sector 4" required />
+          </div>
+
+          <div class="form-group">
+            <label for="category">Category *</label>
+            <select id="category" required>
+              <option value="">Select Category</option>
+              <option value="Roads & Potholes">Roads & Potholes</option>
+              <option value="Water Leakage & Sewage">Water Leakage & Sewage</option>
+              <option value="Streetlight & Electrical">Streetlight & Power Failure</option>
+              <option value="Garbage & Sanitation">Garbage & Sanitation</option>
+              <option value="Public Transport & Stops">Public Transport & Bus Stops</option>
+              <option value="Parks & Green Spaces">Parks & Green Spaces</option>
+              <option value="Traffic Signals & Signage">Traffic Signals & Signage</option>
+              <option value="Illegal Encroachment">Illegal Encroachment / Obstruction</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="urgency">Urgency Level *</label>
+            <select id="urgency" onchange="checkEmergencyLevel(this.value)" required>
+              <option value="low">Low - Routine Maintenance</option>
+              <option value="medium" selected>Medium - Minor Hazard</option>
+              <option value="high">High - Immediate Danger</option>
+            </select>
+          </div>
+
+          <!-- Emergency Alert Banner (Hidden by Default) -->
+          <div class="alert alert-danger hidden full-width" id="emergencyBanner">
+            <i data-lucide="siren" class="alert-icon"></i>
+            <div>
+              <strong>High Hazard Priority Triggered:</strong> Immediate emergency protocols will be initiated, auto-escalating this ticket to the Municipal Rapid Response Team upon submission.
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="reporterName">Your Name (Optional)</label>
+            <input type="text" id="reporterName" placeholder="e.g., John Doe" />
+          </div>
+
+          <div class="form-group">
+            <label for="reporterContact">Phone / Email (For Status Updates)</label>
+            <input type="text" id="reporterContact" placeholder="e.g., +91 9876543210" />
+          </div>
+
+          <!-- Geolocation & Interactive Manual Pinning Map -->
+          <div class="form-group full-width">
+            <label>Location Coordinates & Interactive Map *</label>
+            <div class="geo-picker">
+              <button type="button" class="btn btn-secondary" onclick="getLocation()">
+                <i data-lucide="crosshair"></i> GPS
+              </button>
+              <input type="text" id="locationDisplay" placeholder="Click map or use Auto-Detect GPS" readonly required />
+            </div>
+            <div id="map" class="map-container"></div>
+            <small class="help-text"><i data-lucide="info"></i> Tip: You can click directly on the map to manually place or adjust your location pin.</small>
+          </div>
+
+          <!-- File Upload with Real AI Computer Vision Inspector -->
+          <div class="form-group full-width">
+            <label>Upload Photo Evidence *</label>
+            <div class="file-dropzone" onclick="document.getElementById('fileInput').click()">
+              <i data-lucide="upload-cloud" class="dropzone-icon"></i>
+              <p><strong>Click to upload photo evidence</strong> or drag and drop image file</p>
+              <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="previewImage(event)" required />
+              
+              <div id="imagePreviewContainer" style="display: none; margin-top: 1.25rem; text-align: center;">
+                <div class="preview-card-wrap">
+                  <img id="imagePreview" alt="Preview" class="image-preview" />
+                  
+                  <!-- Dynamic AI Analysis Result Card -->
+                  <div class="ai-analysis-card" id="aiAnalysisCard">
+                    <div class="ai-card-header">
+                      <div class="ai-chip" id="aiStatusChip">
+                        <i data-lucide="cpu" class="spin"></i> <span id="aiStatusText">Analyzing visual features…</span>
+                      </div>
+                      <span class="ai-confidence-badge" id="aiConfidenceBadge" style="display:none;">95% Confidence</span>
+                    </div>
+
+                    <div class="ai-tags-row" id="aiTagsRow" style="display:none;">
+                      <!-- Populated dynamically by CV Engine -->
+                    </div>
+
+                    <div class="ai-feedback-msg" id="aiFeedbackMsg" style="display:none;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group full-width">
+            <label for="description">Detailed Description</label>
+            <textarea id="description" rows="3" placeholder="Provide extra context (landmarks, size, severity)..."></textarea>
+          </div>
+
+        </div>
+
+        <!-- Smart Duplicate Alert Banner (Hidden by Default) -->
+        <div class="alert alert-warning hidden" id="duplicateAlert">
+          <i data-lucide="alert-triangle" class="alert-icon"></i>
+          <div>
+            <strong>Possible Duplicate Issue Detected!</strong> An issue (<span id="duplicateId">#UE-4812</span>) was reported nearby.
+            <button type="button" class="btn btn-sm btn-inline" onclick="upvoteExisting()">
+              👍 Upvote Existing Issue Instead
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn">
+          <i data-lucide="send"></i> Submit Civic Report
+        </button>
+      </form>
+    </section>
+
+    <!-- Public Community Feed -->
+    <section id="feed" class="section-card">
+      <div class="section-header">
+        <div>
+          <h2>Community Infrastructure Feed</h2>
+          <p>Track reported issues, vote for high-priority hazards, and view resolution updates.</p>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterFeed('all', this)">All Reports</button>
+        <button class="filter-btn" onclick="filterFeed('pending', this)">Pending</button>
+        <button class="filter-btn" onclick="filterFeed('in-progress', this)">In Progress</button>
+        <button class="filter-btn" onclick="filterFeed('resolved', this)">Resolved</button>
+      </div>
+
+      <div class="card-grid" id="feedGrid">
+        <!-- Skeleton cards shown while API data loads -->
+        <div class="skeleton-card"><div class="sk-img"></div><div class="sk-body"><div class="sk-line sk-title"></div><div class="sk-line sk-sub"></div><div class="sk-line sk-sub sk-short"></div></div></div>
+        <div class="skeleton-card"><div class="sk-img"></div><div class="sk-body"><div class="sk-line sk-title"></div><div class="sk-line sk-sub"></div><div class="sk-line sk-sub sk-short"></div></div></div>
+        <div class="skeleton-card"><div class="sk-img"></div><div class="sk-body"><div class="sk-line sk-title"></div><div class="sk-line sk-sub"></div><div class="sk-line sk-sub sk-short"></div></div></div>
+      </div>
+    </section>
+
+    <!-- Track Submitted Reports -->
+    <section id="my-reports" class="section-card">
+      <div class="section-header">
+        <div>
+          <h2>My Submitted Reports</h2>
+          <p>Track status updates for reports submitted from this device.</p>
+        </div>
+      </div>
+      <div id="myReportsList" class="my-reports-container">
+        <p class="empty-state">No reports submitted from this browser yet. Use the form above to submit your first report!</p>
+      </div>
+    </section>
+
+    <!-- Municipal Operational Analytics Graph & Civic Leaderboard -->
+    <section id="analytics" class="section-card">
+      <div class="section-header">
+        <div>
+          <h2>City Response Overview</h2>
+          <p>Real-time updates showing how quickly municipal authorities resolve reported issues.</p>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="dash-widget">
+          <h4>Pending Community Reports</h4>
+          <span class="dash-num color-pending" id="statPending">—</span>
+        </div>
+        <div class="dash-widget">
+          <h4>Issues Being Fixed</h4>
+          <span class="dash-num color-progress" id="statInProgress">—</span>
+        </div>
+        <div class="dash-widget">
+          <h4>Resolved Issues</h4>
+          <span class="dash-num color-resolved" id="statResolved">—</span>
+        </div>
+      </div>
+
+      <!-- Live Graph Canvas -->
+      <div class="chart-wrapper">
+        <h3>Monthly Reports vs. Resolutions</h3>
+        <p class="chart-sub">Hover over any point on the graph to inspect exact monthly totals.</p>
+        <div class="canvas-holder" style="height: 300px; position: relative;">
+          <canvas id="reportsChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="logo">
+          <div class="logo-icon"><i data-lucide="eye"></i></div>
+          <span>Urban<strong>Eye</strong></span>
+        </div>
+        <p>A civic platform empowering citizens to report and track urban infrastructure issues in real time.</p>
+      </div>
+      <div class="footer-links">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="#report">Report Issue</a></li>
+          <li><a href="#feed">Live Feed</a></li>
+          <li><a href="#my-reports">My Reports</a></li>
+          <li><a href="#analytics">City Metrics</a></li>
+        </ul>
+      </div>
+      <div class="footer-links">
+        <h4>Account</h4>
+        <ul>
+          <li><a href="index.html">Sign In</a></li>
+          <li><a href="register.html">Register</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 UrbanEye. Built for the ISTE Hackathon. See the city. Fix the city.</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script src="dashboard-user.js"></script>
+  <script>
+    lucide.createIcons();
+    function toggleMobileNav() {
+      const nav = document.getElementById('navLinks');
+      nav.classList.toggle('nav-open');
+    }
+  </script>
+</body>
+</html>

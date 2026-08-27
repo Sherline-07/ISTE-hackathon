@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign In - UrbanEye Civic Platform</title>
+
+  <!-- Google Fonts & Lucide Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <link rel="stylesheet" href="login.css" />
+</head>
+<body class="auth-body">
+
+  <!-- Minimal Auth Navbar -->
+  <header class="auth-nav">
+    <div class="logo">
+      <div class="logo-icon"><i data-lucide="eye"></i></div>
+      <span>Urban<strong>Eye</strong></span>
+    </div>
+    <a href="register.html" class="auth-nav-link">
+      <i data-lucide="user-plus"></i> Create Account
+    </a>
+  </header>
+
+  <!-- Main Center Auth Area -->
+  <main class="auth-wrapper">
+    <div class="auth-card">
+
+      <!-- Role Switcher -->
+      <div class="role-toggle">
+        <button type="button" class="active" data-role="citizen" onclick="setRole('citizen')">
+          <i data-lucide="user"></i> Citizen Sign In
+        </button>
+        <button type="button" data-role="admin" onclick="setRole('admin')">
+          <i data-lucide="shield"></i> Admin Portal
+        </button>
+      </div>
+
+      <!-- Header -->
+      <div class="auth-header">
+        <div class="auth-header-icon" id="authIconWrap"><i data-lucide="log-in"></i></div>
+        <h1 id="authTitle" data-citizen-text="Welcome Back" data-admin-text="Admin Sign In">Welcome Back</h1>
+        <p id="authSubtitle"
+           data-citizen-text="Sign in to track your reported civic issues and resolution updates."
+           data-admin-text="Restricted municipal access — staff credentials required.">
+          Sign in to track your reported civic issues and resolution updates.
+        </p>
+      </div>
+
+      <!-- Admin Notice Banner -->
+      <div class="admin-code-note" id="adminCodeNote" style="display:none;">
+        <i data-lucide="info"></i>
+        <span>Admin sessions are logged for municipal compliance and audit trails.</span>
+      </div>
+
+      <!-- Login Form -->
+      <form class="auth-form" id="loginForm" onsubmit="handleLoginSubmit(event)">
+
+        <div class="form-group">
+          <label class="field-label" for="loginIdentifier">
+            Email Address
+            <span class="label-tag">Registered Account</span>
+          </label>
+          <div class="input-wrap">
+            <i data-lucide="mail" class="input-icon"></i>
+            <input type="email" id="loginIdentifier" placeholder="name@example.com" required autocomplete="username" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="field-label" for="loginPassword">
+            Password
+            <span class="label-tag">Secure</span>
+          </label>
+          <div class="input-wrap">
+            <i data-lucide="lock" class="input-icon"></i>
+            <input type="password" id="loginPassword" class="password-input" placeholder="Enter your password" required autocomplete="current-password" />
+            <button type="button" class="toggle-visibility" onclick="toggleVisibility('loginPassword', this)" aria-label="Toggle password visibility">
+              <i data-lucide="eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="remember-row">
+          <label class="remember-check">
+            <input type="checkbox" id="rememberMe" /> Keep me signed in
+          </label>
+          <a href="#" onclick="showToast('Password reset instructions sent to your email.', 'success', 'mail'); return false;">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn-auth-primary">
+          <i data-lucide="log-in"></i> Sign In to Dashboard
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        Don't have an account? <a href="register.html">Create one — OTP verified</a>
+      </div>
+
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="login.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

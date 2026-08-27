@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UrbanEye - Civic Operations Portal</title>
+
+  <!-- Leaflet Map CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Lucide Icons JS -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Strict Admin Auth Guard (Blocks unauthorized render) -->
+  <script>
+    (function() {
+      const token = localStorage.getItem("urbaneye_token");
+      const role = localStorage.getItem("urbaneye_role");
+      if (!token || role !== "admin") {
+        window.location.replace("index.html");
+      }
+    })();
+  </script>
+
+  <style>
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    
+    html { scroll-behavior: smooth; }
+
+    body { 
+      background: #090d16; 
+      color: #f8fafc; 
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Glassmorphism Panel */
+    .glass-panel {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+    }
+
+    /* Left Sidebar Navigation */
+    aside {
+      width: 250px;
+      height: 100vh;
+      position: fixed;
+      top: 0;
+      left: 0;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(16px);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      z-index: 1000;
+    }
+
+    .brand {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding-left: 0.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      list-style: none;
+    }
+
+    .nav-menu a {
+      color: #94a3b8;
+      text-decoration: none;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      transition: all 0.2s;
+    }
+
+    .nav-menu a:hover, .nav-menu a.active {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border-left: 3px solid #38bdf8;
+    }
+
+    .btn-reset-data {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 0.6rem 1rem;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+      margin-bottom: 0.6rem;
+    }
+
+    .btn-reset-data:hover {
+      background: rgba(239, 68, 68, 0.3);
+      color: #ffffff;
+    }
+
+    .btn-logout {
+      background: rgba(148, 163, 184, 0.12);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      padding: 0.6rem 1rem;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s;
+    }
+
+    .btn-logout:hover {
+      background: rgba(148, 163, 184, 0.25);
+      color: #ffffff;
+    }
+
+    .admin-user {
+      font-size: 0.8rem;
+      color: #64748b;
+      padding: 0 0.5rem 0.75rem;
+      word-break: break-all;
+    }
+
+    /* Main Content Area */
+    main {
+      margin-left: 250px;
+      flex: 1;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+      max-width: 1000px;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.5rem;
+    }
+
+    /* Stats Overview Header */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card {
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .stat-val { font-size: 1.5rem; font-weight: 800; color: #f8fafc; }
+    .stat-lbl { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; }
+
+    /* Search & Filter Bar */
+    .filter-bar {
+      padding: 1rem;
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding-left: 2.2rem;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #64748b;
+      width: 16px;
+      height: 16px;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Complaints Feed */
+    .complaints-feed {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .card {
+      padding: 1.25rem;
+      transition: all 0.2s ease-in-out;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      border-color: rgba(56, 189, 248, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .user-meta { display: flex; align-items: center; gap: 0.75rem; }
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      color: #fff;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+    }
+
+    .username { font-size: 0.9rem; font-weight: 600; color: #f1f5f9; }
+    .time-ago { font-size: 0.75rem; color: #64748b; }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .priority-badge {
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .priority-high { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .priority-medium { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .priority-low { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+
+    .btn-review {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.2s;
+    }
+
+    .btn-review:hover {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+    }
+
+    .badge {
+      padding: 0.25rem 0.65rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+    .badge-progress { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); }
+    .badge-resolved { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
+
+    .issue-title { font-size: 1.1rem; font-weight: 700; color: #f8fafc; margin-bottom: 0.4rem; }
+    .issue-desc { font-size: 0.875rem; color: #94a3b8; line-height: 1.5; }
+
+    .empty-state {
+      padding: 3rem;
+      text-align: center;
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+
+    /* Form Panel Styling */
+    .update-panel {
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .update-panel.highlight {
+      border-color: #38bdf8;
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.35);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+
+    select, input {
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #f8fafc;
+      padding: 0.65rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    
+    input[readonly] {
+      background: #1e293b;
+      color: #38bdf8;
+      font-weight: 600;
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    select:focus, input:focus { border-color: #38bdf8; }
+
+    .btn-submit {
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      padding: 0.75rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+      margin-top: 0.5rem;
+    }
+    .btn-submit:hover { background: #0369a1; }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* Map & Chart Container Setup */
+    #adminMap {
+      height: 380px !important;
+      min-height: 380px;
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      z-index: 1;
+      overflow: hidden;
+      background: #1e293b;
+    }
+
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.25rem;
+    }
+    @media (max-width: 800px) { .analytics-grid { grid-template-columns: 1fr; } }
+
+    .chart-card {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-height: 280px;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 220px !important;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Left Sidebar Navigation -->
+  <aside>
+    <div>
+      <div class="brand">
+        <i data-lucide="shield"></i> UrbanEye
+      </div>
+      <ul class="nav-menu" id="sidebarMenu">
+        <li><a href="#complaints" id="nav-complaints" class="active"><i data-lucide="list"></i> Priority Feed</a></li>
+        <li><a href="#update-status" id="nav-update-status"><i data-lucide="edit-3"></i> Status Updation</a></li>
+        <li><a href="#map-view" id="nav-map-view"><i data-lucide="map-pin"></i> Spatial Map</a></li>
+        <li><a href="#analytics" id="nav-analytics"><i data-lucide="bar-chart-2"></i> Analytics Graphs</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <div class="admin-user" id="adminUserLabel"></div>
+      <!-- Refresh from server -->
+      <button class="btn-reset-data" onclick="resetMockData()">
+        <i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i> Refresh Data
+      </button>
+      <button class="btn-logout" onclick="logout()">
+        <i data-lucide="log-out" style="width: 14px; height: 14px;"></i> Logout
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Workspace -->
+  <main>
+
+    <!-- SECTION 1: Feed -->
+    <section id="complaints">
+      <h2 class="section-title"><i data-lucide="alert-triangle" style="color:#ef4444;"></i> Registered Complaints</h2>
+      
+      <!-- Live Stats Header -->
+      <div class="stats-grid">
+        <div class="glass-panel stat-card">
+          <div>
+            <div class="stat-lbl">Pending</div>
+            <div class="stat-val" id="stat-pending" style="color:#fbbf24;">0</div>
+          </div>
+          <i data-lucide="clock" style="color:#fbbf24; opacity:0.6;"></i>
+        </div>
+        <div class="glass-panel stat-card">
+          <div>
+            <div class="stat-lbl">In Progress</div>
+            <div class="stat-val" id="stat-progress" style="color:#60a5fa;">0</div>
+          </div>
+          <i data-lucide="loader" style="color:#60a5fa; opacity:0.6;"></i>
+        </div>
+        <div class="glass-panel stat-card">
+          <div>
+            <div class="stat-lbl">Resolved</div>
+            <div class="stat-val" id="stat-resolved" style="color:#34d399;">0</div>
+          </div>
+          <i data-lucide="check-circle" style="color:#34d399; opacity:0.6;"></i>
+        </div>
+      </div>
+
+      <!-- Search & Filter Controls -->
+      <div class="glass-panel filter-bar">
+        <div class="search-box">
+          <i data-lucide="search" class="search-icon"></i>
+          <input type="text" id="searchInput" placeholder="Search title, ticket #, or details..." oninput="renderFeed()" />
+        </div>
+        
+        <div class="filter-group">
+          <select id="statusFilter" onchange="renderFeed()">
+            <option value="all">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="in_progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+          </select>
+
+          <select id="priorityFilter" onchange="renderFeed()">
+            <option value="all">All Priorities</option>
+            <option value="high">🚨 High</option>
+            <option value="medium">⚠️ Medium</option>
+            <option value="low">🟢 Low</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="complaints-feed" id="complaintsList">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+    <!-- SECTION 2: Form -->
+    <section id="update-status">
+      <h2 class="section-title"><i data-lucide="check-square" style="color:#fbbf24;"></i> Issue Status Updation</h2>
+      <div class="glass-panel update-panel" id="updatePanel">
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="ticketSelect">Select Ticket ID</label>
+            <select id="ticketSelect" onchange="loadTicketDetails()">
+              <!-- Dynamic Options -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="ticketIdDisplay">Active Complaint ID</label>
+            <input type="text" id="ticketIdDisplay" readonly placeholder="No ticket selected" />
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label>Reported Photo</label>
+          <img
+            id="ticketImagePreview"
+            src=""
+            alt="Reported issue photo"
+            style="width:100%; max-height:220px; object-fit:cover; border-radius:12px; border:1px solid rgba(255,255,255,0.08); margin-top:0.4rem;"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="statusSelect">Update Resolution Status</label>
+          <select id="statusSelect">
+            <option value="pending">Pending Review</option>
+            <option value="in_progress">In Progress (Work Order Issued)</option>
+            <option value="resolved">Resolved & Closed</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="assignedCrew">Assign Field Crew / Division</label>
+          <select id="assignedCrew">
+            <option value="Div-14">Division 14 - Rapid Emergency Unit</option>
+            <option value="Div-12">Division 12 - Road & Infrastructure Unit</option>
+            <option value="Div-08">Division 08 - Sanitation Team</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="officialNote">Resolution Note / Remarks</label>
+          <input type="text" id="officialNote" placeholder="e.g., Crew dispatched to site, repair completed." />
+        </div>
+
+        <button class="btn-submit" id="submitUpdateBtn" onclick="handleUpdate()">Save Status & Notify System</button>
+      </div>
+    </section>
+
+    <!-- SECTION 3: Spatial Map -->
+    <section id="map-view">
+      <h2 class="section-title"><i data-lucide="map" style="color:#34d399;"></i> City Spatial Map</h2>
+      <div id="adminMap"></div>
+    </section>
+
+    <!-- SECTION 4: Analytics Graphs -->
+    <section id="analytics">
+      <h2 class="section-title"><i data-lucide="line-chart" style="color:#a78bfa;"></i> Performance Analytics</h2>
+      <div class="analytics-grid">
+        <div class="glass-panel chart-card">
+          <h3 style="font-size:0.9rem; color:#cbd5e1;">Reported vs. Resolved Issue Trends</h3>
+          <div class="chart-container">
+            <canvas id="waveChart"></canvas>
+          </div>
+        </div>
+        <div class="glass-panel chart-card">
+          <h3 style="font-size:0.9rem; color:#cbd5e1;">Category Distribution</h3>
+          <div class="chart-container">
+            <canvas id="categoryChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    /* =========================================================
+       AUTH GUARD — runs immediately, before anything else loads
+       ========================================================= */
+    const AUTH_TOKEN = localStorage.getItem('urbaneye_token');
+    const AUTH_ROLE = localStorage.getItem('urbaneye_role');
+    if (!AUTH_TOKEN || AUTH_ROLE !== 'admin') {
+      window.location.href = 'index.html';
+    }
+
+    // Point this at your running backend
+    const API_BASE_URL = 'http://localhost:5002/api';
+
+    function logout() {
+      localStorage.removeItem('urbaneye_token');
+      localStorage.removeItem('urbaneye_role');
+      localStorage.removeItem('urbaneye_name');
+      localStorage.removeItem('urbaneye_phone');
+      window.location.href = 'index.html';
+    }
+
+    // Fallback stock photos, keyed by category, for reports that have no uploaded photo
+    const defaultCategoryImages = {
+      "Roads & Potholes": "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=400&q=80",
+      "Road Hazard": "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=400&q=80",
+      "Electrical & Lighting": "https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=400&q=80",
+      "Electrical": "https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=400&q=80",
+      "Waste Management": "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=400&q=80",
+      "Sanitation": "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=400&q=80",
+      "Water & Drainage": "https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=400&q=80",
+      "Water": "https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&w=400&q=80",
+      "General": "https://images.unsplash.com/photo-1584467735871-8e85353a8413?auto=format&fit=crop&w=400&q=80"
+    };
+
+    // User-uploaded photo takes priority; falls back to a category stock photo
+    function resolveReportImage(item) {
+      if (item && item.image && typeof item.image === 'string' && item.image.trim().length > 0) {
+        return item.image;
+      }
+      return defaultCategoryImages[item && item.category] || defaultCategoryImages["General"];
+    }
+
+    // Used only if the API call fails entirely (server down, network error, etc.)
+    const defaultReports = [
+      {
+        id: 'UE-4790',
+        user: 'Priya Raman',
+        time: '1 hour ago',
+        category: 'Electrical',
+        title: 'Exposed Wire Junction Box',
+        description: 'Junction box cover broken after rainstorm. Exposed live cables near sidewalk.',
+        priority: 'high',
+        status: 'in_progress',
+        lat: 12.9810,
+        lng: 80.2520,
+        image: defaultCategoryImages['Electrical']
+      },
+      {
+        id: 'UE-4812',
+        user: 'Aarav Sharma',
+        time: '12 mins ago',
+        category: 'Road Hazard',
+        title: 'Deep Pothole Cluster on Main Road',
+        description: 'Multiple open potholes causing severe traffic slowdowns and hazard for commuters.',
+        priority: 'medium',
+        status: 'pending',
+        lat: 12.9716,
+        lng: 80.2452,
+        image: defaultCategoryImages['Road Hazard']
+      },
+      {
+        id: 'UE-4610',
+        user: 'Karthik Raja',
+        time: '3 hours ago',
+        category: 'Sanitation',
+        title: 'Overflowing Public Dumpster Cleared',
+        description: 'Sanitation crew cleared garbage accumulation near the local primary school.',
+        priority: 'low',
+        status: 'resolved',
+        lat: 12.9600,
+        lng: 80.2300,
+        image: defaultCategoryImages['Sanitation']
+      }
+    ];
+
+    let reports = [];
+    let adminMap = null;
+    let markersGroup = null;
+
+    // Initialization Sequence — waits for real data before rendering anything
+    window.addEventListener('DOMContentLoaded', async () => {
+      initLucide();
+      const nameLabel = document.getElementById('adminUserLabel');
+      if (nameLabel) nameLabel.innerText = localStorage.getItem('urbaneye_name') || 'Admin';
+
+      await loadReports();
+      renderFeed();
+      populateDropdown();
+      initMap();
+      initCharts();
+    });
+
+    // Clean and normalize ID formats (stripping '#' if present)
+    function cleanId(id) {
+      if (!id) return '';
+      return String(id).replace('#', '').trim();
+    }
+
+    // Turns a stored ISO date into "12 mins ago" style text
+    function timeAgo(dateStr) {
+      if (!dateStr) return 'Recently';
+      const then = new Date(dateStr).getTime();
+      if (Number.isNaN(then)) return dateStr; // already a plain string like "Just now"
+      const seconds = Math.floor((Date.now() - then) / 1000);
+      if (seconds < 60) return 'Just now';
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes} min${minutes > 1 ? 's' : ''} ago`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+      const days = Math.floor(hours / 24);
+      return `${days} day${days > 1 ? 's' : ''} ago`;
+    }
+
+    /* Fetches complaints from the real backend (MongoDB via Express API) */
+    async function loadReports() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/complaints`, {
+          headers: { 'Authorization': `Bearer ${AUTH_TOKEN}` }
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          logout();
+          return;
+        }
+        if (!res.ok) throw new Error(`Server responded ${res.status}`);
+
+        const data = await res.json();
+        reports = (data.complaints || []).map(item => ({
+          id: cleanId(item.id),
+          user: item.user || 'User',
+          time: timeAgo(item.time),
+          category: item.category || 'General',
+          title: item.title || 'Reported Issue',
+          description: item.description || 'No extra description provided.',
+          priority: (item.priority || 'medium').toLowerCase(),
+          status: item.status || 'pending',
+          lat: parseFloat(item.lat) || 12.8877,
+          lng: parseFloat(item.lng) || 80.2459,
+          image: item.image || '',
+          assignedCrew: item.assignedCrew || 'Div-14',
+          officialNote: item.officialNote || ''
+        }));
+      } catch (e) {
+        console.warn('Failed to fetch complaints from API, showing sample data:', e);
+        reports = [...defaultReports];
+        showToast('Could not reach server — showing sample data.');
+      }
+    }
+
+    /* Re-fetches from the server (replaces the old "reset to mock data" behavior) */
+    async function resetMockData() {
+      if (document.getElementById('searchInput')) document.getElementById('searchInput').value = '';
+      if (document.getElementById('statusFilter')) document.getElementById('statusFilter').value = 'all';
+      if (document.getElementById('priorityFilter')) document.getElementById('priorityFilter').value = 'all';
+
+      await loadReports();
+      renderFeed();
+      populateDropdown();
+      renderMapPins();
+      showToast('Refreshed from server!');
+    }
+
+    function initLucide() {
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function updateStats() {
+      const pending = reports.filter(r => r.status === 'pending').length;
+      const progress = reports.filter(r => r.status === 'in_progress').length;
+      const resolved = reports.filter(r => r.status === 'resolved').length;
+
+      document.getElementById('stat-pending').innerText = pending;
+      document.getElementById('stat-progress').innerText = progress;
+      document.getElementById('stat-resolved').innerText = resolved;
+    }
+
+    function renderFeed() {
+      updateStats();
+
+      const searchVal = (document.getElementById('searchInput')?.value || '').toLowerCase();
+      const statusVal = document.getElementById('statusFilter')?.value || 'all';
+      const priorityVal = document.getElementById('priorityFilter')?.value || 'all';
+
+      const filtered = reports.filter(item => {
+        const matchesSearch = item.title.toLowerCase().includes(searchVal) || 
+                              item.description.toLowerCase().includes(searchVal) || 
+                              item.id.toLowerCase().includes(searchVal) ||
+                              (item.user && item.user.toLowerCase().includes(searchVal));
+
+        const matchesStatus = statusVal === 'all' || item.status === statusVal;
+        const itemPriority = (item.priority || '').toLowerCase();
+        const matchesPriority = priorityVal === 'all' || itemPriority === priorityVal;
+
+        return matchesSearch && matchesStatus && matchesPriority;
+      });
+
+      const container = document.getElementById('complaintsList');
+      if (!container) return;
+      
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="glass-panel empty-state">
+            <i data-lucide="inbox" style="width: 32px; height: 32px; margin-bottom: 0.5rem; opacity: 0.5;"></i>
+            <p>No complaints matching your current filters.</p>
+          </div>
+        `;
+        initLucide();
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => `
+        <div class="glass-panel card" onclick="navigateToUpdateForm('${item.id}')">
+          <div class="card-top">
+            <div class="user-meta">
+              <img
+                src="${resolveReportImage(item)}"
+                alt="${escapeHtml(item.title)}"
+                style="width:48px; height:48px; border-radius:10px; object-fit:cover; flex-shrink:0; border:1px solid rgba(255,255,255,0.1);"
+                onerror="this.onerror=null; this.src='${defaultCategoryImages['General']}';"
+              />
+              <div>
+                <div class="username">${item.user || 'Anonymous'} <span style="font-weight:normal; color:#64748b; font-size:0.8rem;">(#${item.id})</span></div>
+                <div class="time-ago">${item.time || 'Recently'}</div>
+              </div>
+            </div>
+            <div class="card-actions">
+              <span class="priority-badge ${getPriorityClass(item.priority)}">
+                ${(item.priority || '').toLowerCase() === 'high' ? '🚨 HIGH' : (item.priority || '').toLowerCase() === 'medium' ? '⚠️ MEDIUM' : '🟢 LOW'}
+              </span>
+              <button class="btn-review" onclick="event.stopPropagation(); navigateToUpdateForm('${item.id}')">
+                <i data-lucide="edit-3" style="width: 14px; height: 14px;"></i> Review
+              </button>
+              <span class="badge ${getBadgeClass(item.status)}">${formatStatus(item.status)}</span>
+            </div>
+          </div>
+          <div class="issue-title">${escapeHtml(item.title)}</div>
+          <div class="issue-desc">${escapeHtml(item.description)}</div>
+        </div>
+      `).join('');
+      
+      initLucide();
+    }
+
+    function navigateToUpdateForm(ticketId) {
+      const select = document.getElementById('ticketSelect');
+      if (select) {
+        select.value = cleanId(ticketId);
+        loadTicketDetails();
+      }
+
+      document.querySelectorAll('#sidebarMenu a').forEach(a => a.classList.remove('active'));
+      const activeNav = document.getElementById('nav-update-status');
+      if (activeNav) activeNav.classList.add('active');
+
+      const targetSection = document.getElementById('update-status');
+      if (targetSection) {
+        targetSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+
+      const panel = document.getElementById('updatePanel');
+      if (panel) {
+        panel.classList.add('highlight');
+        setTimeout(() => panel.classList.remove('highlight'), 1500);
+      }
+    }
+
+    function populateDropdown() {
+      const select = document.getElementById('ticketSelect');
+      if (!select) return;
+      select.innerHTML = reports.map(r => `<option value="${r.id}">#${r.id} - ${r.title}</option>`).join('');
+      loadTicketDetails();
+    }
+
+    function loadTicketDetails() {
+      const select = document.getElementById('ticketSelect');
+      if (!select) return;
+      const ticket = reports.find(r => r.id === select.value);
+      
+      if (ticket) {
+        document.getElementById('ticketIdDisplay').value = '#' + ticket.id;
+        document.getElementById('statusSelect').value = ticket.status;
+        document.getElementById('assignedCrew').value = ticket.assignedCrew || 'Div-14';
+        document.getElementById('officialNote').value = ticket.officialNote || '';
+
+        const imgPreview = document.getElementById('ticketImagePreview');
+        if (imgPreview) imgPreview.src = resolveReportImage(ticket);
+      }
+    }
+
+    /* Sends the update to the real backend (PATCH /api/complaints/:id) */
+    async function handleUpdate() {
+      const selectId = document.getElementById('ticketSelect').value;
+      if (!selectId) {
+        showToast('No ticket selected.');
+        return;
+      }
+
+      const newStatus = document.getElementById('statusSelect').value;
+      const crew = document.getElementById('assignedCrew').value;
+      const note = document.getElementById('officialNote').value;
+      const btn = document.getElementById('submitUpdateBtn');
+
+      if (btn) { btn.disabled = true; btn.innerText = 'Saving…'; }
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/complaints/${selectId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${AUTH_TOKEN}`
+          },
+          body: JSON.stringify({ status: newStatus, assignedCrew: crew, officialNote: note })
+        });
+
+        if (res.status === 401 || res.status === 403) {
+          logout();
+          return;
+        }
+        if (!res.ok) throw new Error(`Server responded ${res.status}`);
+
+        await loadReports();
+        renderFeed();
+        populateDropdown();
+        renderMapPins();
+        showToast(`Complaint #${selectId} updated to ${formatStatus(newStatus)}`);
+      } catch (e) {
+        console.warn('Failed to update complaint:', e);
+        showToast('Failed to save — check the server is running.');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerText = 'Save Status & Notify System'; }
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.createElement('div');
+      toast.innerText = msg;
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: rgba(15, 23, 42, 0.95);
+        color: #38bdf8;
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        z-index: 9999;
+        backdrop-filter: blur(10px);
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    /* Map Setup */
+    function initMap() {
+      const container = document.getElementById('adminMap');
+      if (!container || typeof L === 'undefined') return;
+
+      if (adminMap !== null) {
+        adminMap.remove();
+      }
+
+      adminMap = L.map('adminMap', { zoomControl: false }).setView([12.8877, 80.2459], 12);
+      
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap &copy; CARTO'
+      }).addTo(adminMap);
+
+      L.control.zoom({ position: 'bottomright' }).addTo(adminMap);
+      markersGroup = L.layerGroup().addTo(adminMap);
+      
+      renderMapPins();
+
+      setTimeout(() => {
+        if (adminMap) adminMap.invalidateSize();
+      }, 300);
+    }
+
+    function renderMapPins() {
+      if (!adminMap || !markersGroup) return;
+      markersGroup.clearLayers();
+
+      reports.forEach(item => {
+        if (!item.lat || !item.lng) return;
+        const color = item.status === 'resolved' ? '#10b981' : item.status === 'in_progress' ? '#2563eb' : '#f59e0b';
+        
+        const customIcon = L.divIcon({
+          className: 'custom-pin',
+          html: `<div style="background-color: ${color}; width: 18px; height: 18px; border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 3px 8px rgba(0,0,0,0.4);"></div>`,
+          iconSize: [18, 18]
+        });
+
+        const marker = L.marker([item.lat, item.lng], { icon: customIcon })
+          .bindPopup(`
+            <div style="font-family: sans-serif; font-size: 0.85rem; color: #0f172a;">
+              <b style="font-size: 0.95rem;">#${item.id}</b><br/>
+              <span>${escapeHtml(item.title)}</span><br/>
+              <span style="font-size:0.75rem; color:#64748b;">Status: <b>${formatStatus(item.status)}</b></span>
+            </div>
+          `);
+
+        markersGroup.addLayer(marker);
+      });
+    }
+
+    /* Chart.js Setup */
+    function initCharts() {
+      const waveEl = document.getElementById('waveChart');
+      const catEl = document.getElementById('categoryChart');
+
+      if (waveEl && typeof Chart !== 'undefined') {
+        new Chart(waveEl.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [
+              { label: 'Reported', data: [14, 22, 18, 29, 25, 38, 30], borderColor: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', fill: true, tension: 0.4 },
+              { label: 'Resolved', data: [10, 18, 16, 24, 28, 32, 28], borderColor: '#34d399', backgroundColor: 'rgba(52, 211, 153, 0.1)', fill: true, tension: 0.4 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#94a3b8' } } },
+            scales: {
+              x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#64748b' } },
+              y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#64748b' } }
+            }
+          }
+        });
+      }
+
+      if (catEl && typeof Chart !== 'undefined') {
+        new Chart(catEl.getContext('2d'), {
+          type: 'doughnut',
+          data: {
+            labels: ['Road Hazards', 'Electrical', 'Sanitation', 'Water'],
+            datasets: [{ data: [40, 25, 20, 15], backgroundColor: ['#38bdf8', '#fbbf24', '#34d399', '#a78bfa'], borderWidth: 0 }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10 } } } },
+            cutout: '70%'
+          }
+        });
+      }
+    }
+
+    function getPriorityClass(p) {
+      const priority = (p || '').toLowerCase();
+      if (priority === 'high') return 'priority-high';
+      if (priority === 'medium') return 'priority-medium';
+      return 'priority-low';
+    }
+
+    function getBadgeClass(status) {
+      if (status === 'in_progress') return 'badge-progress';
+      if (status === 'resolved') return 'badge-resolved';
+      return 'badge-pending';
+    }
+
+    function formatStatus(status) {
+      if (status === 'in_progress') return 'In Progress';
+      if (status === 'resolved') return 'Resolved';
+      return 'Pending';
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+  </script>
+</body>
+</html>
